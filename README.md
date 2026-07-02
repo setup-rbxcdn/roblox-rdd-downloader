@@ -1,4 +1,4 @@
-# rdd-downloader
+# roblox-rdd-downloader
 
 Headless Node.js reimplementation of [latte-soft/rdd](https://github.com/latte-soft/rdd)
 (MIT licensed), supporting all four of rdd's binary types.

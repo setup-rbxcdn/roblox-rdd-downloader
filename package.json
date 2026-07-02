@@ -3,7 +3,26 @@
   "version": "2.0.0",
   "description": "Locally download Windows/Mac Roblox deployments directly from your machine. Headless Node.js reimplementation of latte-soft/rdd's Windows manifest-assembly and Mac direct-zip download paths.",
   "type": "module",
-  "main": "rdd-download.mjs",
+  "main": "rdd-core.mjs",
+  "bin": {
+    "rdd-download": "./rdd-download.mjs",
+    "rdd-download-live": "./rdd-download-live.mjs"
+  },
+  "files": [
+    "rdd-core.mjs",
+    "rdd-download.mjs",
+    "rdd-download-live.mjs",
+    "rdd-studio.static-tables.mjs",
+    "README.md"
+  ],
+  "keywords": ["roblox", "roblox-studio",  "roblox-player",  "roblox-mac",  "roblox-deployments",  "roblox-setup", "downloader", "rdd", "cli"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/setup-rbxcdn/roblox-rdd-downloader.git"
+  },
+  "engines": {
+    "node": ">=18"
+  },
   "dependencies": {
     "jszip": "^3.10.1"
   },
