@@ -347,7 +347,7 @@ export async function downloadWeb({ args }) {
   const jobs = [
     ...WEB_ROOT_FILES.map((name) => ({ rel: `/${name}`, optional: false })),
     ...WEB_OPTIONAL_FILES.map((name) => ({ rel: `/${name}`, optional: true })),
-    ...metadata.map((f) => ({ rel: f.path, optional: false })),
+    ...metadata.map((f) => ({ rel: f.path, optional: true })),
   ];
 
   await writeFile(path.join(outDir, "WebClient.metadata.json"), metadataText);
@@ -367,17 +367,34 @@ export async function downloadWeb({ args }) {
         await mkdir(path.dirname(destPath), { recursive: true });
         await writeFile(destPath, buf);
       } catch (err) {
-        if (!optional) failed.push(`${rel} (${err.message})`);
+        if (!optional) throw err;
+        failed.push({ path: rel, error: err.message });
       }
       if (++done % 200 === 0) console.log(`  ${done}/${jobs.length}`);
     }
   }
   await Promise.all(Array.from({ length: WEB_CONCURRENCY }, worker));
 
-  if (failed.length) {
-    console.error(`\n${failed.length} file(s) failed:`);
-    for (const f of failed.slice(0, 20)) console.error(`  ${f}`);
-    throw new Error(`${failed.length} of ${jobs.length} files failed to download`);
+  // Optional top-level files (e.g. WebFlags.json) are expected to 403 sometimes.
+  const optionalRoot = new Set(WEB_OPTIONAL_FILES.map((n) => `/${n}`));
+  const missing = failed.filter((f) => !optionalRoot.has(f.path));
+  await writeFile(
+    path.join(outDir, "download-report.json"),
+    JSON.stringify(
+      {
+        version,
+        status: missing.length ? "partial" : "complete",
+        metadataFiles: metadata.length,
+        failures: missing,
+      },
+      null,
+      2,
+    ),
+  );
+
+  if (missing.length) {
+    console.warn(`\n${missing.length} file(s) failed (see download-report.json):`);
+    for (const f of missing.slice(0, 20)) console.warn(`  ${f.path} (${f.error})`);
   }
   console.log(`\nDone. Saved to: ${outDir}`);
 }
