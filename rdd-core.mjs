@@ -58,6 +58,7 @@ Binary Types:
   * WindowsStudio64
   * MacPlayer
   * MacStudio
+  * WebClientApp
 
 Options:
   --channel <name>    Deploy channel (default: LIVE)
@@ -69,6 +70,7 @@ Options:
 Windows types are downloaded and extracted package-by-package (manifest
 assembly). Mac types are downloaded as a single pre-built zip, matching
 how rdd itself handles them — there's no manifest to assemble for Mac.
+WebClientApp is downloaded file-by-file from the list in WebClient.metadata.json.
 `;
 
 /** Normalize a version string the way rdd does: lowercase, "version-" prefixed. */
@@ -319,6 +321,67 @@ export async function downloadMac({ args, binaryTypeConfig }) {
   );
 }
 
+// ---- Web: WebClient.metadata.json file list, files fetched individually ----
+
+const WEB_ROOT_FILES = ["WasmPlayer.js", "WebClient.js", "WebClient.wasm"];
+const WEB_OPTIONAL_FILES = ["audio-processor-fast.js", "WebFlags.json"];
+const WEB_CONCURRENCY = 16;
+
+export async function downloadWeb({ args }) {
+  const outDir = path.resolve(args.out);
+  await mkdir(outDir, { recursive: true });
+
+  console.log(`Resolving ${args.binaryType} version...`);
+  const version = args.version
+    ? normalizeVersion(args.version)
+    : await resolveVersion(args.channel, args.binaryType);
+  console.log(`  version: ${version}`);
+
+  const base = `${HOST_PATH}/webclient/${version}-RobloxWebClient`;
+
+  console.log("Fetching WebClient.metadata.json...");
+  const metadataText = await fetchText(`${base}/WebClient.metadata.json`);
+  const metadata = JSON.parse(metadataText);
+  console.log(`  ${metadata.length} files listed`);
+
+  const jobs = [
+    ...WEB_ROOT_FILES.map((name) => ({ rel: `/${name}`, optional: false })),
+    ...WEB_OPTIONAL_FILES.map((name) => ({ rel: `/${name}`, optional: true })),
+    ...metadata.map((f) => ({ rel: f.path, optional: false })),
+  ];
+
+  await writeFile(path.join(outDir, "WebClient.metadata.json"), metadataText);
+
+  let done = 0;
+  const failed = [];
+  let next = 0;
+  async function worker() {
+    while (next < jobs.length) {
+      const { rel, optional } = jobs[next++];
+      const destPath = path.resolve(outDir, "." + rel);
+      if (!destPath.startsWith(outDir + path.sep)) {
+        throw new Error(`refusing path outside output dir: ${rel}`);
+      }
+      try {
+        const buf = await fetchBuffer(`${base}${rel}`);
+        await mkdir(path.dirname(destPath), { recursive: true });
+        await writeFile(destPath, buf);
+      } catch (err) {
+        if (!optional) failed.push(`${rel} (${err.message})`);
+      }
+      if (++done % 200 === 0) console.log(`  ${done}/${jobs.length}`);
+    }
+  }
+  await Promise.all(Array.from({ length: WEB_CONCURRENCY }, worker));
+
+  if (failed.length) {
+    console.error(`\n${failed.length} file(s) failed:`);
+    for (const f of failed.slice(0, 20)) console.error(`  ${f}`);
+    throw new Error(`${failed.length} of ${jobs.length} files failed to download`);
+  }
+  console.log(`\nDone. Saved to: ${outDir}`);
+}
+
 export async function run({ args, extractRootsTable, binaryTypesTable }) {
   const binaryTypeConfig = (binaryTypesTable || STATIC_BINARY_TYPES)[
     args.binaryType
@@ -331,6 +394,8 @@ export async function run({ args, extractRootsTable, binaryTypesTable }) {
 
   if (binaryTypeConfig.platform === "mac") {
     await downloadMac({ args, binaryTypeConfig });
+  } else if (binaryTypeConfig.platform === "web") {
+    await downloadWeb({ args });
   } else {
     await downloadWindows({ args, extractRootsTable, binaryTypeConfig });
   }

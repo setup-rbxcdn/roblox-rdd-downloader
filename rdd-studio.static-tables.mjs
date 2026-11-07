@@ -112,4 +112,9 @@ export const binaryTypes = {
       "x86-64": "/mac/",
     },
   },
+  // Served from /webclient/<version>-RobloxWebClient/, file list comes from
+  // WebClient.metadata.json.
+  WebClientApp: {
+    platform: "web",
+  },
 };

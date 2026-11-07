@@ -1,7 +1,8 @@
 # roblox-rdd-downloader
 
 Headless Node.js reimplementation of [latte-soft/rdd](https://github.com/latte-soft/rdd)
-(MIT licensed), supporting all four of rdd's binary types.
+(MIT licensed), supporting all four of rdd's binary types, plus `WebClientApp`
+(the wasm browser client).
 
 **Scope:** downloads and extracts the official, signed Roblox binaries
 directly from Roblox's deployment CDN. Does not patch, modify, or execute
@@ -56,6 +57,10 @@ node rdd-download.mjs --binaryType WindowsPlayer --out ./RobloxPlayer
 node rdd-download.mjs --binaryType MacStudio --arch arm64
 node rdd-download.mjs --binaryType MacPlayer --arch x86-64
 
+# WebClientApp (wasm browser client, file-by-file)
+node rdd-download.mjs --binaryType WebClientApp --out ./WebClientApp
+node rdd-download.mjs --binaryType WebClientApp --version db62701aba0b4bcd
+
 # Live-synced variant (pulls extractRoots from rdd's own source at
 # runtime; falls back to the static table on fetch/parse failure)
 node rdd-download-live.mjs --binaryType WindowsStudio64
@@ -80,7 +85,7 @@ import { download, downloadLive, getLatestVersion } from "roblox-rdd-downloader"
 
 // Fast path — uses the checked-in static extractRoots table.
 const { outDir } = await download({
-  binaryType: "MacStudio", // "WindowsPlayer" | "WindowsStudio64" | "MacPlayer" | "MacStudio"
+  binaryType: "MacStudio", // "WindowsPlayer" | "WindowsStudio64" | "MacPlayer" | "MacStudio" | "WebClientApp"
   arch: "arm64",            // Mac only; "arm64" (default) or "x86-64"
   channel: "LIVE",          // default: "LIVE"
   out: "./RobloxStudio",    // default: "./<binaryType>"
@@ -102,7 +107,7 @@ All library functions return promises and throw on failure (no
 in `try/catch`, or use inside larger tools/servers.
 
 Lower-level pieces are also exported for advanced use: `buildVersionPath`,
-`getPackageManifest`, `downloadWindows`, `downloadMac`, `normalizeVersion`,
+`getPackageManifest`, `downloadWindows`, `downloadMac`, `downloadWeb`, `normalizeVersion`,
 `fetchLiveTables`, plus the raw `extractRoots` / `binaryTypes` tables and
 the `HOST_PATH` / `CLIENTSETTINGS_HOST` constants.
 

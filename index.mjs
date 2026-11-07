@@ -16,6 +16,7 @@ import {
   getPackageManifest,
   downloadWindows,
   downloadMac,
+  downloadWeb,
   fetchText,
   HOST_PATH,
   CLIENTSETTINGS_HOST,
@@ -44,7 +45,7 @@ function normalizeOptions(options = {}) {
  * Fast, no dependency on rdd's upstream source being reachable.
  *
  * @param {object} options
- * @param {"WindowsPlayer"|"WindowsStudio64"|"MacPlayer"|"MacStudio"} [options.binaryType="WindowsStudio64"]
+ * @param {"WindowsPlayer"|"WindowsStudio64"|"MacPlayer"|"MacStudio"|"WebClientApp"} [options.binaryType="WindowsStudio64"]
  * @param {string} [options.channel="LIVE"]
  * @param {string} [options.version] - pin an exact version hash instead of resolving latest
  * @param {"arm64"|"x86-64"} [options.arch] - Mac only
@@ -125,6 +126,7 @@ export {
   getPackageManifest,
   downloadWindows,
   downloadMac,
+  downloadWeb,
   STATIC_EXTRACT_ROOTS as extractRoots,
   STATIC_BINARY_TYPES as binaryTypes,
   HOST_PATH,
