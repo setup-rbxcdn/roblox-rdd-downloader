@@ -375,7 +375,8 @@ export async function downloadWeb({ args }) {
   }
   await Promise.all(Array.from({ length: WEB_CONCURRENCY }, worker));
 
-  // Optional top-level files (e.g. WebFlags.json) are expected to 403 sometimes.
+  // Optional top-level files aren't in the metadata and may be absent;
+  // WebFlags.json returned 403 on every live version tested.
   const optionalRoot = new Set(WEB_OPTIONAL_FILES.map((n) => `/${n}`));
   const missing = failed.filter((f) => !optionalRoot.has(f.path));
   await writeFile(
