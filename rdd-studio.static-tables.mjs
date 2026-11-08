@@ -116,5 +116,6 @@ export const binaryTypes = {
   // WebClient.metadata.json.
   WebClientApp: {
     platform: "web",
+    blobDirs: { wasm32: "/webclient/" },
   },
 };

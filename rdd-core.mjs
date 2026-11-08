@@ -327,7 +327,7 @@ const WEB_ROOT_FILES = ["WasmPlayer.js", "WebClient.js", "WebClient.wasm"];
 const WEB_OPTIONAL_FILES = ["audio-processor-fast.js", "WebFlags.json"];
 const WEB_CONCURRENCY = 16;
 
-export async function downloadWeb({ args }) {
+export async function downloadWeb({ args, binaryTypeConfig }) {
   const outDir = path.resolve(args.out);
   await mkdir(outDir, { recursive: true });
 
@@ -337,7 +337,13 @@ export async function downloadWeb({ args }) {
     : await resolveVersion(args.channel, args.binaryType);
   console.log(`  version: ${version}`);
 
-  const base = `${HOST_PATH}/webclient/${version}-RobloxWebClient`;
+  const { versionPath } = buildVersionPath({
+    channel: args.channel,
+    binaryTypeConfig,
+    arch: args.arch,
+    version,
+  });
+  const base = `${versionPath}RobloxWebClient`;
 
   console.log("Fetching WebClient.metadata.json...");
   const metadataText = await fetchText(`${base}/WebClient.metadata.json`);
@@ -413,7 +419,7 @@ export async function run({ args, extractRootsTable, binaryTypesTable }) {
   if (binaryTypeConfig.platform === "mac") {
     await downloadMac({ args, binaryTypeConfig });
   } else if (binaryTypeConfig.platform === "web") {
-    await downloadWeb({ args });
+    await downloadWeb({ args, binaryTypeConfig });
   } else {
     await downloadWindows({ args, extractRootsTable, binaryTypeConfig });
   }
